@@ -1,26 +1,44 @@
 Manifest-Version: 1.0
-Ant-Version: Apache Ant 1.9.7
-X-COMMENT: Main-Class will be added automatically by build
-Class-Path: lib/activation.jar lib/api-common.jar lib/aws-java-sdk-clo
- udwatch.jar lib/aws-java-sdk-core.jar lib/aws-java-sdk-ec2.jar lib/aw
- s-java-sdk-events.jar lib/aws-java-sdk-iam.jar lib/aws-java-sdk-lambd
- a.jar lib/c3p0.jar lib/commons-codec.jar lib/commons-exec.jar lib/com
- mons-io.jar lib/commons-lang.jar lib/commons-logging.jar lib/dns.jar 
- lib/gax-httpjson.jar lib/gax.jar lib/google-api-client.jar lib/google
- -api-services-storage.jar lib/google-auth-library-credentials.jar lib
- /google-auth-library-oauth2.jar lib/google-cloud-core-http.jar lib/go
- ogle-cloud-core.jar lib/google-cloud-storage.jar lib/google-http-clie
- nt-appengine.jar lib/google-http-client-jackson2.jar lib/google-http-
- client.jar lib/grpc-context.jar lib/gson.jar lib/guava.jar lib/htmlun
- it-driver.jar lib/httpclient.jar lib/httpcore.jar lib/ip-address.jar 
- lib/jackson-annotations.jar lib/jackson-core.jar lib/jackson-databind
- .jar lib/jackson-dataformat-cbor.jar lib/javax.mail.jar lib/jersey-cl
- ient-2.25.1.jar lib/jersey-media-json-jackson-2.25.1.jar lib/jmespath
- -java.jar lib/joda-time.jar lib/jsch.jar lib/json.jar lib/jsoup.jar l
- ib/log4j.jar lib/lombok.jar lib/mchange-commons.jar lib/opencensus-ap
- i.jar lib/opencensus-contrib-http-util.jar lib/postgresql.jar lib/thr
- eetenbp.jar lib/aspose-cells-17.8.jar lib/aspose-cells-17.8-javadoc.j
- ar
-Created-By: 1.8.0_161-b12 (Oracle Corporation)
+Class-Path: lib/accessors-smart.jar lib/activation.jar lib/adal4j.jar 
+ lib/adapter-rxjava.jar lib/api-common.jar lib/asm.jar lib/aws-java-sd
+ k-cloudwatch.jar lib/aws-java-sdk-core.jar lib/aws-java-sdk-ec2.jar l
+ ib/aws-java-sdk-events.jar lib/aws-java-sdk-iam.jar lib/aws-java-sdk-
+ lambda.jar lib/azure-annotations.jar lib/azure-client-authentication.
+ jar lib/azure-client-runtime.jar lib/azure-keyvault-core.jar lib/azur
+ e-keyvault-webkey.jar lib/azure-keyvault.jar lib/azure-mgmt-appservic
+ e.jar lib/azure-mgmt-batch.jar lib/azure-mgmt-batchai.jar lib/azure-m
+ gmt-cdn.jar lib/azure-mgmt-compute.jar lib/azure-mgmt-containerinstan
+ ce.jar lib/azure-mgmt-containerregistry.jar lib/azure-mgmt-containers
+ ervice.jar lib/azure-mgmt-cosmosdb.jar lib/azure-mgmt-dns.jar lib/azu
+ re-mgmt-eventhub.jar lib/azure-mgmt-graph-rbac.jar lib/azure-mgmt-key
+ vault.jar lib/azure-mgmt-locks.jar lib/azure-mgmt-monitor.jar lib/azu
+ re-mgmt-msi.jar lib/azure-mgmt-network.jar lib/azure-mgmt-redis.jar l
+ ib/azure-mgmt-resources.jar lib/azure-mgmt-search.jar lib/azure-mgmt-
+ servicebus.jar lib/azure-mgmt-sql.jar lib/azure-mgmt-storage.jar lib/
+ azure-mgmt-trafficmanager.jar lib/azure.jar lib/c3p0.jar lib/client-r
+ untime.jar lib/commons-codec.jar lib/commons-collections4.jar lib/com
+ mons-compress.jar lib/commons-exec.jar lib/commons-io.jar lib/commons
+ -lang.jar lib/commons-lang3.jar lib/commons-logging.jar lib/commons-m
+ ath3.jar lib/commons-net.jar lib/converter-jackson.jar lib/cron-utils
+ .jar lib/dns.jar lib/gax-httpjson.jar lib/gax.jar lib/google-api-clie
+ nt.jar lib/google-api-services-gmail-v1.jar lib/google-api-services-s
+ torage.jar lib/google-auth-library-credentials.jar lib/google-auth-li
+ brary-oauth2.jar lib/google-cloud-core-http.jar lib/google-cloud-core
+ .jar lib/google-cloud-storage.jar lib/google-http-client-appengine.ja
+ r lib/google-http-client-jackson2.jar lib/google-http-client.jar lib/
+ google-oauth-client.jar lib/grpc-context.jar lib/gson.jar lib/guava.j
+ ar lib/htmlunit-driver.jar lib/httpclient.jar lib/httpcore.jar lib/ip
+ -address.jar lib/jackson-annotations.jar lib/jackson-core.jar lib/jac
+ kson-databind.jar lib/jackson-dataformat-cbor.jar lib/jackson-datatyp
+ e-joda.jar lib/javax.mail.jar lib/jcip-annotations.jar lib/jmespath-j
+ ava.jar lib/joda-time.jar lib/jsch.jar lib/json-smart.jar lib/json.ja
+ r lib/jsoup.jar lib/log4j.jar lib/lombok.jar lib/mchange-commons.jar 
+ lib/nimbus-jose-jwt.jar lib/oauth2-oidc-sdk.jar lib/okhttp-urlconnect
+ ion.jar lib/okhttp.jar lib/okio.jar lib/ooxml-schemas.jar lib/opencen
+ sus-api.jar lib/opencensus-contrib-http-util.jar lib/poi-ooxml-schema
+ s.jar lib/poi-ooxml.jar lib/poi.jar lib/postgresql.jar lib/retrofit.j
+ ar lib/rxjava.jar lib/slf4j-api.jar lib/slf4j-simple.jar lib/threeten
+ bp.jar lib/xmlbeans.jar lib/aspose-cells-17.8.jar lib/aspose-cells-17
+ .8-javadoc.jar
 Main-Class: tech.iresponse.Bootstrap
 

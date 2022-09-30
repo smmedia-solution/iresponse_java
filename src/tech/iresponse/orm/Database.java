@@ -13,7 +13,7 @@ import tech.iresponse.logging.Loggers;
 
 public class Database {
 
-    private static final Map pakagere = new HashMap<>();
+    private static final Map PAKAGER = new HashMap<>();
 
     public static void init() throws Exception {
         List list = (List)FileUtils.listFilesAndDirs(new File(System.getProperty("datasources.path")), TrueFileFilter.INSTANCE, DirectoryFileFilter.DIRECTORY);
@@ -33,7 +33,7 @@ public class Database {
                         connector.setPassword(jSONObject.getString("password"));
                         connector.setDatabaseName(jSONObject.getString("database"));
                         connector.iniDataSource();
-                        pakagere.put(connector.getKey(), connector);
+                        Database.PAKAGER.put(connector.getKey(), connector);
                     }
 
                 }
@@ -43,13 +43,13 @@ public class Database {
     }
 
     public static Connector get(String paramString) {
-        return (pakagere.containsKey(paramString) && pakagere.get(paramString) != null) ? (Connector)pakagere.get(paramString) : null;
+        return (Database.PAKAGER.containsKey(paramString) && Database.PAKAGER.get(paramString) != null) ? (Connector)Database.PAKAGER.get(paramString) : null;
     }
 
     public static String getBackendPid(String paramString) {
-        if (pakagere.containsKey(paramString) && pakagere.get(paramString) != null){
+        if (Database.PAKAGER.containsKey(paramString) && Database.PAKAGER.get(paramString) != null){
             try {
-                List<String> list = ((Connector)pakagere.get(paramString)).availableTables("select pg_backend_pid();", null, 1, "pg_backend_pid");
+                List<String> list = ((Connector)Database.PAKAGER.get(paramString)).availableTables("select pg_backend_pid();", null, 1, "pg_backend_pid");
                 if (list != null && !list.isEmpty())
                     return list.get(0);
             } catch (Exception exception) {

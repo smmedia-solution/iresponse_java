@@ -6,6 +6,5 @@ import org.apache.log4j.Logger;
 public class Loggers {
     public static void error(Throwable th) {
         Logger.getLogger("rootLogger").error(ExceptionUtils.getFullStackTrace(th));
-        //Logger.getLogger("rootLogger").error(ExceptionUtils.getStackTrace(th));
     }
 }

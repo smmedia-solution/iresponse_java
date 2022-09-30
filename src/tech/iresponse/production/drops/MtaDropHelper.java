@@ -322,7 +322,7 @@ public class MtaDropHelper {
                 boolean bool2 = (match != null && match.contains("placeholder")) ? true : false;
                 if (!bool2 && !xdfns.contains(match) && !bool1 && !arrayList.contains(match)) {
                     arrayList.add(match);
-                    value = StringUtils.replace(value, "[" + match + "]", "[[" + match + "]");
+                    value = StringUtils.replace(value, "[" + match + "]", "[" + match + "]");
                 }
             }
         }

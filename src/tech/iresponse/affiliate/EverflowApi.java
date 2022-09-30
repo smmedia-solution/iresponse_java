@@ -10,7 +10,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import tech.iresponse.exceptions.DatabaseException;
@@ -71,6 +71,13 @@ public class EverflowApi extends AffiliateApi {
         JSONObject response = new JSONObject(results);
         if (response.has("error")){
             throw new DatabaseException(response.getString("error"));
+        }
+        JSONObject relation = response.getJSONObject("relationship");
+        if(relation.has("integrations")) {
+            JSONObject integrations = relation.getJSONObject("integrations");
+            if(integrations.has("optizmo")) {
+                return integrations.getJSONObject("optizmo").getString("mailer_access_key");
+            }
         }
         //System.out.println("everflow : " + response.getJSONObject("relationship").getJSONObject("email_optout").getString("suppression_file_link"));
         return response.getJSONObject("relationship").getJSONObject("email_optout").getString("suppression_file_link");

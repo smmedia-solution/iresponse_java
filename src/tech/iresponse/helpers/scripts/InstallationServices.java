@@ -73,7 +73,9 @@ public class InstallationServices {
             ssh.shellCommand(prefix + "yum update -y");
         }
         ssh.shellCommand(prefix + "yum -y reinstall polkit");
-        ssh.shellCommand(prefix + "yum install -y sudo openssh-clients gdb nano wget httpd mod_ssl zip unzip yum-utils cronie perl");
+        ssh.shellCommand(prefix + "yum install -y sudo openssh-clients gdb nano wget httpd mod_ssl zip unzip yum-utils cronie perl python3 python3-pip python-pip");
+        ssh.shellCommand(prefix + "pip3 install requests");
+
         FileUtils.writeStringToFile(new File(System.getProperty("logs.path") + "/installations/inst_" + mtaServ.id + "_proc.log"), "Installing / re-Installing php 7 ......", "utf-8");
 
         if ("user-pass".equals(mtaServ.sshLoginType) && !"root".equals(mtaServ.sshUsername)) {
@@ -98,7 +100,7 @@ public class InstallationServices {
             ssh.cmd(prefix + "yum-config-manager --enable remi-php71");
         }
 
-        ssh.shellCommand(prefix + "yum install -y php php-mcrypt php-cli php-gd php-curl php-pgsql php-mysql php-ldap php-zip php-fileinfo php-common php-pdo php-mbstring php-soap php-zip php-xmlrpc php-opcache python3");
+        ssh.shellCommand(prefix + "yum install -y php php-mcrypt php-cli php-gd php-curl php-pgsql php-mysql php-ldap php-zip php-fileinfo php-common php-pdo php-mbstring php-soap php-zip php-xmlrpc php-opcache");
         ssh.cmd(prefix + "sed -i 's/upload_max_filesize = 2M/upload_max_filesize = 3G/g' /etc/php.ini");
         ssh.cmd(prefix + "sed -i 's/max_file_uploads = 20/max_file_uploads = 200/g' /etc/php.ini");
         ssh.cmd(prefix + "sed -i 's/post_max_size = 8M/post_max_size = 3G/g' /etc/php.ini");
@@ -588,14 +590,17 @@ public class InstallationServices {
         ssh.cmd(prefix + "rm -rf /var/spool/pmta");
         ssh.cmd(prefix + "rm -rf /var/spool/iresponse");
 
+        //String firwalldFolder = System.getProperty("assets.path") + "/scripts";
         String pmtaFolder = System.getProperty("assets.path") + "/pmta";
         boolean getSystm = String.valueOf(ssh.cmd("file /sbin/init")).contains("32-bit");
         String pmtaSystem = getSystm ? "pmta32.rpm" : "pmta64.rpm";
 
         if ("user-pass".equals(mtaServ.sshLoginType) && !"root".equals(mtaServ.sshUsername)) {
+            //ssh.upload(firwalldFolder + "/firewall.pl", "/home/firewall.pl");
             ssh.upload(pmtaFolder + "/rpms/" + pmtaSystem, "/home/" + mtaServ.sshUsername + "/pmta.rpm");
             ssh.cmd("rpm -Uvh /home/" + mtaServ.sshUsername + "/pmta.rpm");
         } else {
+            //ssh.upload(firwalldFolder + "/firewall.pl", "/home/firewall.pl");
             ssh.upload(pmtaFolder + "/rpms/" + pmtaSystem, "/home/pmta.rpm");
             ssh.cmd("rpm -Uvh /home/pmta.rpm");
         }
@@ -688,8 +693,8 @@ public class InstallationServices {
         ssh.cmd(prefix + "chmod 755 /var/spool/iresponse/bad");
         ssh.cmd(prefix + "chmod 755 /var/spool/iresponse/tmp");
         ssh.cmd(prefix + "chown -R pmta:pmta /etc/pmta/");
-        ssh.shellCommand(prefix + "service pmta restart");
-        ssh.shellCommand(prefix + "service pmtahttp restart");
+        ssh.shellCommand(prefix + "systemctl restart pmta");
+        ssh.shellCommand(prefix + "systemctl restart pmtahttp");
         ssh.cmd(prefix + "rm -rf /etc/pmta/habeas.sample");
 
         if ("user-pass".equals(mtaServ.sshLoginType) && !"root".equals(mtaServ.sshUsername)) {

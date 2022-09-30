@@ -5,8 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.io.Serializable;
 import java.sql.Timestamp;
-
-import tech.iresponse.exceptions.DatabaseException;
 import tech.iresponse.orm.ActiveRecord;
 import tech.iresponse.orm.Column;
 

@@ -6,7 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.regex.Pattern;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import tech.iresponse.logging.Loggers;
@@ -58,13 +58,6 @@ public class ConversionsCollector extends Thread {
                                     notExiste = true;
                                 }
 
-                                lead.uniqueToken = token;
-                                lead.affiliateNetworkId = this.affiliateNetwork.id;
-                                lead.offerProductionId = String.valueOf(row.get("offer_id"));
-                                lead.userFullName = this.mailers.containsKey(Integer.valueOf(lead.userProductionId)) ? (String)this.mailers.get(Integer.valueOf(lead.userProductionId)) : "Unknown Mailer";
-                                lead.actionTime = new Timestamp((new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH)).parse(row.getString("conversion_date")).getTime());
-                                lead.payout = TypesParser.safeParseFloat(row.get("payout"));
-                                lead.processType = (lead.processType == null) ? "md" : lead.processType;
 
                                 for (int index = 1; index < 4; index++) {
                                     //String[] subs = new String[0];
@@ -143,6 +136,14 @@ public class ConversionsCollector extends Thread {
                                 } else {
                                     lead.processType = "md";
                                 }
+
+                                lead.uniqueToken = token;
+                                lead.affiliateNetworkId = this.affiliateNetwork.id;
+                                lead.offerProductionId = String.valueOf(row.get("offer_id"));
+                                lead.userFullName = this.mailers.containsKey(Integer.valueOf(lead.userProductionId)) ? (String)this.mailers.get(Integer.valueOf(lead.userProductionId)) : "Unknown Mailer";
+                                lead.actionTime = new Timestamp((new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH)).parse(row.getString("conversion_date")).getTime());
+                                lead.payout = TypesParser.safeParseFloat(row.get("payout"));
+                                lead.processType = (lead.processType == null) ? "md" : lead.processType;
 
                                 lead.processType = (lead.processType == null) ? "md" : lead.processType;
                                 if (lead.listId > 0 && lead.clientId > 0) {

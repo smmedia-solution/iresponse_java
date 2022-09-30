@@ -114,6 +114,9 @@ public class Application {
             case "QW1hem9u": {
                 return (new Amazon()).controller(this.action);
             }
+            case "QXp1cmU=": {
+                return (new Azure()).controller(this.action);
+            }
             case "RGlnaXRhbE9jZWFu": {
                 return (new DigitalOcean()).controller(this.action);
             }

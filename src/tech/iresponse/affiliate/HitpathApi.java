@@ -179,8 +179,8 @@ public class HitpathApi extends AffiliateApi {
         params.put("Accept", "application/json");
         params.put("Authorization", "Bearer  " + (getAffiliateNetwork()).apiKey);
         LinkedHashMap<String, String> records = new LinkedHashMap<>();
-        records.put("start", (new SimpleDateFormat("yyyy-MM-dd HH:mm")).format((new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).parse(startDate)));
-        records.put("end", (new SimpleDateFormat("yyyy-MM-dd HH:mm")).format((new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).parse(endDate)));
+        records.put("start", (new SimpleDateFormat("yyyy-MM-dd")).format((new SimpleDateFormat("yyyy-MM-dd")).parse(startDate)));
+        records.put("end", (new SimpleDateFormat("yyyy-MM-dd")).format((new SimpleDateFormat("yyyy-MM-dd")).parse(endDate)));
         String results = Agents.get((getAffiliateNetwork()).apiUrl + "/reports/campaigns", records, 60, params);
 
         if (results == null || "".equals(results) || results.contains("Too Many Attempts.")) {

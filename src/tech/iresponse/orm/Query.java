@@ -2,7 +2,7 @@ package tech.iresponse.orm;
 
 import java.util.*;
 
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import tech.iresponse.exceptions.DatabaseException;
 import tech.iresponse.utils.TypesParser;
 import tech.iresponse.logging.Loggers;

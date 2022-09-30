@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
+  <component name="FacetManager">
+    <facet type="IntelliGuard" name="Obfuscation">
+      <configuration>
+        <option name="yGuardJar" value="D:\ALLL\jar\Obfuscate_code\yguard-2.7.1\lib\yguard.jar" />
+        <option name="inFile" value="D:\DR-2\me\Vugex\APP_MOHAMED_SOURCE\BACKEND\out\artifacts\iresponse_services\iresponse_services_1.jar" />
+        <option name="outFile" value="D:\DR-2\me\Vugex\APP_MOHAMED_SOURCE\BACKEND\out\artifacts\iresponse_services\iresponse_services_ob.jar" />
+        <option name="mainclass" value="tech.iresponse.Bootstrap" />
+        <option name="conservemanifest" value="true" />
+        <option name="sourcefile" value="true" />
+        <option name="linenumbertable" value="true" />
+        <option name="localvariabletable" value="true" />
+        <option name="localvariabletypetable" value="true" />
+        <option name="jarConfig">
+          <JarConfig>
+            <option name="jarEntries">
+              <list>
+                <option value="D:\DR-2\me\Vugex\APP_MOHAMED_SOURCE\BACKEND\out\production\BACKEND" />
+              </list>
+            </option>
+          </JarConfig>
+        </option>
+      </configuration>
+    </facet>
+  </component>
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="accessors-smart" level="project" />
+  </component>
+</module>

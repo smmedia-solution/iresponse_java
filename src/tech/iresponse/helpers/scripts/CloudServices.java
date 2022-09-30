@@ -1,5 +1,7 @@
 package tech.iresponse.helpers.scripts;
 
+import com.microsoft.azure.management.compute.VirtualMachine;
+import com.microsoft.azure.management.network.NicIPConfiguration;
 import java.io.File;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
@@ -130,6 +132,115 @@ public class CloudServices {
                 }
             }
         }
+        mtaServ.update();
+        return updatedNetwork;
+    }
+
+    public static boolean setupNetwork(SSHConnector ssh, MtaServer mtaServ, String prefix, int version, Domain domin, VirtualMachine vm) throws Exception {
+        boolean updatedNetwork = false;
+        boolean useDnsApi = !"none".equals(domin.accountType) ? true : false;
+        ManagementServer mngmentServ = ManageServerWebmail.getCurrentWebMailServer();
+        ssh.cmd(prefix + "rm -rf /etc/opendkim/");
+        ssh.shellCommand(prefix + "yum remove -y libopendkim-devel opendkim");
+        if (useDnsApi) {
+            ssh.shellCommand(prefix + "yum install -y libopendkim-devel opendkim");
+            ssh.cmd(prefix + "opendkim-default-keygen");
+            if ("user-pass".equals(mtaServ.sshLoginType) && !"root".equals(mtaServ.sshUsername)) {
+                ssh.upload(System.getProperty("assets.path") + "/templates/servers/dkim-config.tpl", "/home/" + mtaServ.sshUsername + "/opendkim.conf");
+                ssh.cmd(prefix + "mv /home/" + mtaServ.sshUsername + "/opendkim.conf /etc/opendkim.conf");
+            } else {
+                ssh.upload(System.getProperty("assets.path") + "/templates/servers/dkim-config.tpl", "/etc/opendkim.conf");
+            }
+        }
+        Database.get("system").executeUpdate("UPDATE admin.domains SET availability = 'Available' , ip_id = 0 WHERE id = " + domin.id, null, 0);
+        domin.value = domin.value.replaceAll("\r", "").replaceAll("\n", "");
+        DnsApi api = DnsApi.controller(domin.accountType);
+        int vmtasId = 0;
+        String recordsA = "A";
+        String dkim1 = "";
+        String vspfs4 = "v=spf1 ip4:" + vm.getPrimaryPublicIPAddress().ipAddress();
+        int nb = 7;
+        String hostsTpl = StringUtils.replace(StringUtils.replace(FileUtils.readFileToString(new File(System.getProperty("assets.path") + "/templates/servers/hosts")), "$p_ip", vm.getPrimaryPublicIPAddress().ipAddress()), "$p_domain", domin.value);
+        if ("user-pass".equals(mtaServ.sshLoginType) && !"root".equals(mtaServ.sshUsername)) {
+            ssh.cmd("hostname mail." + domin.value);
+            ssh.uploadContent(hostsTpl, "/home/" + mtaServ.sshUsername + "/hosts");
+            ssh.cmd("mv /home/" + mtaServ.sshUsername + "/hosts /etc/hosts");
+        } else {
+            ssh.cmd("hostname mail." + domin.value);
+            ssh.uploadContent(hostsTpl, "/etc/hosts");
+        }
+        String netwrks = ssh.cmd(prefix + "cat /etc/sysconfig/network");
+        if (!"".equals(netwrks)){
+            for (String str : netwrks.split("\\n")) {
+                if (str != null && !"".equals(str) && str.startsWith("HOSTNAME")){
+                    netwrks = netwrks.replace(str, "HOSTNAME=\"mail." + domin.value + "\"");
+                }
+            }
+        }
+        if ("user-pass".equals(mtaServ.sshLoginType) && !"root".equals(mtaServ.sshUsername)) {
+            ssh.uploadContent(netwrks, "/home/" + mtaServ.sshUsername + "/network");
+            ssh.cmd("mv /home/" + mtaServ.sshUsername + "/network /etc/sysconfig/network");
+        } else {
+            ssh.uploadContent(netwrks, "/etc/sysconfig/network");
+        }
+        mtaServ.hostName = "mail." + domin.value;
+        if (useDnsApi) {
+            mtaServ.setDkimInstalled(true);
+            mtaServ.setDmarcInstalled(true);
+        }
+        mtaServ.update();
+        vmtasId = InstallationServices.saveServerVmta((ServerVmta)null, vm.getPrimaryNetworkInterface().primaryPrivateIP(), "", domin.value, mtaServ);
+        if (useDnsApi) {
+            ssh.cmd(prefix + "mkdir -p /etc/opendkim/keys/" + domin.value + ";");
+            ssh.cmd(prefix + "opendkim-genkey -D /etc/opendkim/keys/" + domin.value + "/ -d " + domin.value + " -s mail;");
+            ssh.cmd(prefix + "chown -R opendkim:opendkim /etc/opendkim/keys/" + domin.value + "");
+            ssh.cmd(prefix + "chmod 640 /etc/opendkim/keys/" + domin.value + "/mail.private");
+            ssh.cmd(prefix + "chmod 644 /etc/opendkim/keys/" + domin.value + "/mail.txt");
+            ssh.cmd(prefix + "echo \"mail._dkim." + domin.value + " " + domin.value + ":mail:/etc/opendkim/keys/" + domin.value + "/mail.private\" >> /etc/opendkim/KeyTable");
+            ssh.cmd(prefix + "echo \"" + domin.value + "\" >> /etc/opendkim/TrustedHosts");
+            ssh.cmd(prefix + "echo \"*@" + domin.value + " mail._domainkey." + domin.value + "\" >> /etc/opendkim/SigningTable");
+            dkim1 = String.valueOf(ssh.cmd("cat /etc/opendkim/keys/" + domin.value + "/mail.txt | cut -d \"(\" -f2 | cut -d \")\" -f1 | awk '{ printf \"%s\", $0 }'"));
+            dkim1 = dkim1.replaceAll("\r", "").replaceAll("\n", "").replaceAll("\t", " ").replaceAll(" +", " ").trim();
+            dkim1 = dkim1.contains("DKIM1") ? dkim1 : "";
+        }
+        if (api != null) {
+            updatedNetwork = true;
+            api.setRecords(domin.accountId, domin.value);
+            api.setupRecords(recordsA, vm.getPrimaryPublicIPAddress().ipAddress(), domin, mngmentServ);
+        }
+        if (vm.getPrimaryNetworkInterface() != null && vm.getPrimaryNetworkInterface().ipConfigurations() != null && !vm.getPrimaryNetworkInterface().ipConfigurations().isEmpty()) {
+            String hostNme = "";
+            String dkim2 = "";
+            for (Map.Entry entry : vm.getPrimaryNetworkInterface().ipConfigurations().entrySet()) {
+                if (!((NicIPConfiguration)entry.getValue()).isPrimary()) {
+                    hostNme = Strings.getSaltString(4, true, false, true, false);
+                    if (useDnsApi) {
+                        ssh.cmd(prefix + "mkdir -p /etc/opendkim/keys/" + hostNme + "." + domin.value + ";");
+                            ssh.cmd(prefix + "opendkim-genkey -D /etc/opendkim/keys/" + hostNme + "." + domin.value + "/ -d " + hostNme + "." + domin.value + " -s mail;");
+                            ssh.cmd(prefix + "chown -R opendkim:opendkim /etc/opendkim/keys/" + hostNme + "." + domin.value + "");
+                            ssh.cmd(prefix + "chmod 640 /etc/opendkim/keys/" + hostNme + "." + domin.value + "/mail.private");
+                            ssh.cmd(prefix + "chmod 644 /etc/opendkim/keys/" + hostNme + "." + domin.value + "/mail.txt");
+                            ssh.cmd(prefix + "echo \"mail._dkim." + hostNme + "." + domin.value + " " + hostNme + "." + domin.value + ":mail:/etc/opendkim/keys/" + hostNme + "." + domin.value + "/mail.private\" >> /etc/opendkim/KeyTable");
+                            ssh.cmd(prefix + "echo \"" + hostNme + "." + domin.value + "\" >> /etc/opendkim/TrustedHosts");
+                            ssh.cmd(prefix + "echo \"*@" + hostNme + "." + domin.value + " mail._domainkey." + hostNme + "." + domin.value + "\" >> /etc/opendkim/SigningTable");
+                            dkim2 = String.valueOf(ssh.cmd("cat /etc/opendkim/keys/" + hostNme + "." + domin.value + "/mail.txt | cut -d \"(\" -f2 | cut -d \")\" -f1 | awk '{ printf \"%s\", $0 }'"));
+                            dkim2 = dkim2.replaceAll("\r", "").replaceAll("\n", "").replaceAll("\t", " ").replaceAll(" +", " ").trim();
+                            dkim2 = dkim2.contains("DKIM1") ? dkim2 : "";
+                    }
+                    if (api != null) {
+                        api.addSPFDkim(nb, ((NicIPConfiguration)entry.getValue()).getPublicIPAddress().ipAddress(), hostNme, "A", "v=spf1 ip4:" + ((NicIPConfiguration)entry.getValue()).getPublicIPAddress().ipAddress() + " -all", dkim2);
+                        vspfs4 = vspfs4 + " ip4:" + ((NicIPConfiguration)entry.getValue()).getPublicIPAddress().ipAddress();
+                        nb = !"".equals(dkim2) ? (nb + 3) : (nb + 2);
+                    }
+                    InstallationServices.saveServerVmta((ServerVmta)null, ((NicIPConfiguration)entry.getValue()).privateIPAddress(), hostNme + ".", domin.value, mtaServ);
+                }
+            }
+        }
+        if (api != null) {
+            api.setupDkimDmarc(nb, dkim1, vm.getPrimaryPublicIPAddress().ipAddress(), false, vspfs4 + " -all", true, domin);
+            System.out.println(api.setDomainRecords(domin.accountId, domin.value, null));
+        }
+        Database.get("system").executeUpdate("UPDATE admin.domains SET availability = 'Taken' , mta_server_id = '" + mtaServ.id + "', ip_id = '" + vmtasId + "' WHERE id = " + domin.id, null, 0);
         mtaServ.update();
         return updatedNetwork;
     }

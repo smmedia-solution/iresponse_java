@@ -4,7 +4,7 @@ import java.beans.ConstructorProperties;
 import java.sql.Date;
 import java.text.DecimalFormat;
 import java.util.Calendar;
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.json.JSONObject;
 import tech.iresponse.logging.Loggers;
 import tech.iresponse.models.affiliate.Vertical;
