@@ -339,8 +339,10 @@ public class Servers implements Controller {
                     boolean usePredefinedSubs = (parameters.has("use-predefined-subs") && "enabled".equalsIgnoreCase(parameters.getString("use-predefined-subs").trim())) ? true : false;
                     boolean installTracking = (parameters.has("install-tracking") && "enabled".equalsIgnoreCase(parameters.getString("install-tracking").trim())) ? true : false;
                     boolean useBrands = (parameters.has("use-brands") && "enabled".equalsIgnoreCase(parameters.getString("use-brands").trim())) ? true : false;
+
                     boolean useSsl = (parameters.has("use-ssl") && "enabled".equalsIgnoreCase(parameters.getString("use-ssl").trim())) ? true : false;
                     boolean installPmta = (parameters.has("install-pmta") && "enabled".equalsIgnoreCase(parameters.getString("install-pmta").trim())) ? true : false;
+                    int pmtaVersion = (parameters.has("pmta-version") && "40".equalsIgnoreCase(parameters.getString("pmta-version").trim())) ? 40 : 45;
 
                     String prefix = "root".equals(mtaserver.sshUsername) ? "" : "sudo ";
                     int version = String.valueOf(ssh.cmd("cat /etc/*release* | grep 'centos:7'")).replaceAll("\n", "").contains("centos:7") ? 7 : 6;
@@ -428,7 +430,12 @@ public class Servers implements Controller {
 
                     if (installPmta) {
                         FileUtils.writeStringToFile(new File(System.getProperty("logs.path") + "/installations/inst_" + serverId + "_proc.log"), "Installing / re-installing PowerMTA ......", "utf-8");
-                        InstallationServices.installPmta(ssh, mtaserver, prefix);
+                        if(pmtaVersion == 40) {
+                            InstallationServices.installPmta(ssh, mtaserver, prefix);
+                        }
+                        if (pmtaVersion == 45) {
+                            InstallationServices.installPmta45(ssh, mtaserver, prefix);
+                        }
                     }
 
                     mtaserver.setInstalled(true);

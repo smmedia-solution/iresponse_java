@@ -60,7 +60,7 @@ public class SMTPVmtaCreator extends Thread {
                     servVmta2.type = "SMTP";
                     servVmta2.status = "Activated";
                     servVmta2.pingStatus = servVmta1.pingStatus;
-                    servVmta1.name += "_smtp_" + str3 + "_" + jSONObject.getString("host").replaceAll(Pattern.quote("."), "_");
+                    servVmta2.name = servVmta1.name + "_smtp_" + str3 + "_" + jSONObject.getString("host").replaceAll(Pattern.quote("."), "_");
                     servVmta2.ip = servVmta1.ip;
                     servVmta2.domain = servVmta1.domain;
                     servVmta2.customDomain = servVmta2.name;

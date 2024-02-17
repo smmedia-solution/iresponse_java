@@ -705,6 +705,141 @@ public class InstallationServices {
         System.out.println("Installing PowerMTA completed !");
     }
 
+    public static void installPmta45(SSHConnector ssh, MtaServer mtaServ, String prefix) throws Exception {
+
+        List<ServerVmta> listVmta = (List)ServerVmta.all(ServerVmta.class, "mta_server_id = ?", new Object[] { Integer.valueOf(mtaServ.id) });
+
+        if (listVmta == null || listVmta.isEmpty()){
+            throw new DatabaseException("No vmtas found !");
+        }
+
+        ssh.shellCommand(prefix + "service pmta stop && " + prefix + "service pmtahttp stop");
+        ssh.shellCommand(prefix + "rpm -e $(rpm -qa 'PowerMTA*')");
+        ssh.cmd(prefix + "rm -rf /etc/pmta");
+        ssh.cmd(prefix + "rm -rf /var/lib/pmta");
+        ssh.cmd(prefix + "rm -rf /var/log/pmta");
+        ssh.cmd(prefix + "rm -rf /var/spool/pmta");
+        ssh.cmd(prefix + "rm -rf /var/spool/iresponse");
+
+        //String firwalldFolder = System.getProperty("assets.path") + "/scripts";
+        String pmtaFolder = System.getProperty("assets.path") + "/pmta";
+        String pmtaSystem = "/45/pmta.rpm";
+
+        if ("user-pass".equals(mtaServ.sshLoginType) && !"root".equals(mtaServ.sshUsername)) {
+            //ssh.upload(firwalldFolder + "/firewall.pl", "/home/firewall.pl");
+            ssh.upload(pmtaFolder + pmtaSystem, "/home/" + mtaServ.sshUsername + "/pmta.rpm");
+            ssh.cmd("rpm -Uvh /home/" + mtaServ.sshUsername + "/pmta.rpm");
+        } else {
+            //ssh.upload(firwalldFolder + "/firewall.pl", "/home/firewall.pl");
+            ssh.upload(pmtaFolder + pmtaSystem, "/home/pmta.rpm");
+            ssh.cmd("rpm -Uvh /home/pmta.rpm");
+        }
+
+        ssh.cmd(prefix + "rm -rf /etc/pmta/license-notice");
+        ssh.cmd(prefix + "rm -rf /etc/pmta/config");
+        ssh.cmd(prefix + "rm -rf /etc/pmta/config-defaults");
+        ssh.cmd(prefix + "mkdir -p /etc/pmta/parameters/");
+        ssh.cmd(prefix + "mkdir -p /etc/pmta/vmtas/");
+        ssh.cmd(prefix + "mkdir -p /etc/pmta/keys/");
+
+        String pmtaConfigPath = String.valueOf(Application.getSettingsParam("pmta_config_type")).toLowerCase();
+        pmtaConfigPath = "".equals(pmtaConfigPath) ? (pmtaFolder + "/configs/default") : (pmtaFolder + "/configs/" + pmtaConfigPath);
+        String hostNameMail = "host-name mail." + ((ServerVmta)listVmta.get(0)).domain.replaceAll("\r", "").replaceAll("\n", "") + "\n";
+        String tplVmta = FileUtils.readFileToString(new File(pmtaConfigPath + "/vmta.tpl"), "UTF-8");
+
+        listVmta.forEach(servervmta -> {
+            String domains = servervmta.getDomain().replaceAll("\r", "").replaceAll("\n", "");
+            String configTpl = StringUtils.replace(tplVmta, "$p_vmta", servervmta.getName());
+            configTpl = StringUtils.replace(configTpl, "$p_ip", servervmta.getIp());
+            configTpl = StringUtils.replace(configTpl, "$p_domain", domains);
+            if (mtaServ.getDkimInstalled()) {
+                ssh.cmd("cp -r /etc/opendkim/keys/" + domains + "/mail.private /etc/pmta/keys/" + servervmta.ip + ".pem");
+                configTpl = StringUtils.replace(configTpl, "$p_dkim", "domain-key mail," + domains + ",/etc/pmta/keys/" + servervmta.ip + ".pem");
+            } else {
+                configTpl = StringUtils.replace(configTpl, "$p_dkim", "");
+            }
+            if ("user-pass".equals(mtaServ.getSshLoginType()) && !"root".equals(mtaServ.getSshUsername())) {
+                ssh.uploadContent(configTpl, "/home/" + mtaServ.getSshUsername() + "/" + servervmta.getName() + ".conf");
+                ssh.cmd("mv /home/" + mtaServ.getSshUsername() + "/" + servervmta.getName() + ".conf /etc/pmta/vmtas/" + servervmta.getName() + ".conf");
+            } else {
+                ssh.uploadContent(configTpl, "/etc/pmta/vmtas/" + servervmta.getName() + ".conf");
+            }
+        });
+
+        if ("user-pass".equals(mtaServ.sshLoginType) && !"root".equals(mtaServ.sshUsername)) {
+            ssh.upload(pmtaFolder + "/45/pmta.lic", "/home/" + mtaServ.sshUsername + "/license");
+            ssh.upload(pmtaConfigPath + "/config", "/home/" + mtaServ.sshUsername + "/config");
+            ssh.cmd("mv /home/" + mtaServ.sshUsername + "/pmta.lic /etc/pmta/license");
+            ssh.cmd("mv /home/" + mtaServ.sshUsername + "/config /etc/pmta/config");
+        } else {
+            ssh.upload(pmtaFolder + "/45/pmta.lic", "/etc/pmta/license");
+            ssh.upload(pmtaConfigPath + "/config", "/etc/pmta/config");
+        }
+
+        //patch pmta 45
+        ssh.upload(pmtaFolder + "/45/pmtad_patch", "/usr/sbin/pmtad");
+        ssh.cmd("chown pmta:pmta /usr/sbin/pmtad;");
+        ssh.cmd("chmod 755 /usr/sbin/pmtad");
+
+        File[] parametersFiles = (new File(pmtaConfigPath + "/parameters/")).listFiles();
+        for (File file : parametersFiles) {
+            if (!file.isDirectory()){
+                switch (file.getName()) {
+                    case "pmta_http.conf":
+                        if ("user-pass".equals(mtaServ.sshLoginType) && !"root".equals(mtaServ.sshUsername)) {
+                            ssh.uploadContent(StringUtils.replace(StringUtils.replace(FileUtils.readFileToString(file, "UTF-8"), "$p_host", hostNameMail), "$p_http_port", String.valueOf(Application.getSettingsParam("pmta_http_port"))), "/home/" + mtaServ.sshUsername + "/" + file.getName());
+                            ssh.cmd("mv /home/" + mtaServ.sshUsername + "/" + file.getName() + " /etc/pmta/parameters/" + file.getName());
+                            break;
+                        }
+                        ssh.uploadContent(StringUtils.replace(StringUtils.replace(FileUtils.readFileToString(file, "UTF-8"), "$p_host", hostNameMail), "$p_http_port", String.valueOf(Application.getSettingsParam("pmta_http_port"))), "/etc/pmta/parameters/" + file.getName());
+                        break;
+                    default:
+                        if ("user-pass".equals(mtaServ.sshLoginType) && !"root".equals(mtaServ.sshUsername)) {
+                            ssh.upload(file.getAbsolutePath(), "/home/" + mtaServ.sshUsername + "/" + file.getName());
+                            ssh.cmd("mv /home/" + mtaServ.sshUsername + "/" + file.getName() + " /etc/pmta/parameters/" + file.getName());
+                            break;
+                        }
+                        ssh.upload(file.getAbsolutePath(), "/etc/pmta/parameters/" + file.getName());
+                        break;
+                }
+            }
+        }
+
+        ssh.cmd(prefix + "mkdir -p /etc/pmta/delivered/");
+        ssh.cmd(prefix + "mkdir -p /etc/pmta/delivered/archived/");
+        ssh.cmd(prefix + "mkdir -p /etc/pmta/delivered/process/");
+        ssh.cmd(prefix + "mkdir -p /etc/pmta/delivered/backup/");
+        ssh.cmd(prefix + "mkdir -p /etc/pmta/bounces/");
+        ssh.cmd(prefix + "mkdir -p /etc/pmta/bounces/archived/");
+        ssh.cmd(prefix + "mkdir -p /etc/pmta/bounces/process/");
+        ssh.cmd(prefix + "mkdir -p /etc/pmta/bounces/backup/");
+        ssh.cmd(prefix + "mkdir -p /etc/pmta/deffered/");
+        ssh.cmd(prefix + "mkdir -p /etc/pmta/deffered/archived/");
+        ssh.cmd(prefix + "mkdir -p /var/spool/pmta/");
+        ssh.cmd(prefix + "mkdir -p /var/spool/iresponse/");
+        ssh.cmd(prefix + "mkdir -p /var/spool/iresponse/pickup/");
+        ssh.cmd(prefix + "mkdir -p /var/spool/iresponse/bad/");
+        ssh.cmd(prefix + "mkdir -p /var/spool/iresponse/tmp/");
+        ssh.cmd(prefix + "chown -R pmta:pmta /var/log/pmta/");
+        ssh.cmd(prefix + "chown -R pmta:pmta /var/spool/iresponse/");
+        ssh.cmd(prefix + "chmod 640 /etc/pmta/config");
+        ssh.cmd(prefix + "chmod 755 /var/spool/iresponse");
+        ssh.cmd(prefix + "chmod 755 /var/spool/iresponse/pickup");
+        ssh.cmd(prefix + "chmod 755 /var/spool/iresponse/bad");
+        ssh.cmd(prefix + "chmod 755 /var/spool/iresponse/tmp");
+        ssh.cmd(prefix + "chown -R pmta:pmta /etc/pmta/");
+        ssh.shellCommand(prefix + "systemctl restart pmta");
+        ssh.shellCommand(prefix + "systemctl restart pmtahttp");
+        ssh.cmd(prefix + "rm -rf /etc/pmta/habeas.sample");
+
+        if ("user-pass".equals(mtaServ.sshLoginType) && !"root".equals(mtaServ.sshUsername)) {
+            ssh.cmd("rm -rf /home/" + mtaServ.sshUsername + "/pmta.rpm");
+        } else {
+            ssh.cmd("rm -rf /home/pmta.rpm");
+        }
+        System.out.println("Installing PowerMTA completed !");
+    }
+
     public static synchronized int saveServerVmta(ServerVmta srvVmta, String ip, String sub, String domain, MtaServer mtaServ) throws Exception {
         int id = 0;
         boolean newVmta = false;
