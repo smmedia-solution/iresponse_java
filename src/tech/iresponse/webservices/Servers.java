@@ -342,7 +342,7 @@ public class Servers implements Controller {
 
                     boolean useSsl = (parameters.has("use-ssl") && "enabled".equalsIgnoreCase(parameters.getString("use-ssl").trim())) ? true : false;
                     boolean installPmta = (parameters.has("install-pmta") && "enabled".equalsIgnoreCase(parameters.getString("install-pmta").trim())) ? true : false;
-                    int pmtaVersion = (parameters.has("pmta-version") && "40".equalsIgnoreCase(parameters.getString("pmta-version").trim())) ? 40 : 45;
+                    int pmtaVersion = (parameters.has("pmta-version") && "45".equalsIgnoreCase(parameters.getString("pmta-version").trim())) ? 45 : 40;
 
                     String prefix = "root".equals(mtaserver.sshUsername) ? "" : "sudo ";
                     int version = String.valueOf(ssh.cmd("cat /etc/*release* | grep 'centos:7'")).replaceAll("\n", "").contains("centos:7") ? 7 : 6;

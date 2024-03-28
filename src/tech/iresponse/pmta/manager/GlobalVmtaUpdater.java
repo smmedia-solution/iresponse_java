@@ -75,7 +75,7 @@ public class GlobalVmtaUpdater extends Thread {
                     newVmtas.type = "Custom";
                     newVmtas.status = "Activated";
                     newVmtas.pingStatus = oldVmtas.pingStatus;
-                    oldVmtas.name += "_" + this.ispId + "_" + this.domain.replaceAll(Pattern.quote("."), "_");
+                    newVmtas.name = oldVmtas.name +  "_" + this.ispId + "_" + this.domain.replaceAll(Pattern.quote("."), "_");
                     newVmtas.ip = oldVmtas.ip;
                     newVmtas.ispId = isp.id;
                     newVmtas.ispName = isp.name;
