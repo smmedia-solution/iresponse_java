@@ -52,7 +52,7 @@ public class SMTPVmtaCreator extends Thread {
                 ServerVmta servVmta1 = (ServerVmta)rotate.getCurrentThenRotate();
                 ServerVmta servVmta2 = new ServerVmta();
 
-                if (jSONObject != null && jSONObject.length() == 4 && jSONObject.has("host")) {
+                if (jSONObject != null && jSONObject.length() >= 4 && jSONObject.has("host")) {
                     String str3 = jSONObject.getString("username").replaceAll(Pattern.quote("."), "_");
                     str3 = str3.contains("@") ? str3.split(Pattern.quote("@"))[0] : str3;
                     servVmta2.mtaServerId = mtaServ.id;
@@ -68,11 +68,17 @@ public class SMTPVmtaCreator extends Thread {
                     servVmta2.createdDate = date;
                     servVmta2.lastUpdatedBy = usrId;
                     servVmta2.lastUpdatedDate = date;
+                    servVmta2.smtp_1 = jSONObject.getString("username");
+
 
                     String str4 = StringUtils.replace(this.vmtaConfigTemplate, "$p_vmta", servVmta2.name);
                     str4 = StringUtils.replace(str4, "$p_ip", servVmta2.ip);
                     str4 = StringUtils.replace(str4, "$p_host", jSONObject.getString("host"));
                     str4 = StringUtils.replace(str4, "$p_port", jSONObject.getString("port"));
+                    if(jSONObject.length() == 5) {
+                        servVmta2.smtp_2 = jSONObject.getString("username_2");
+                        str4 = StringUtils.replace(str4, "$p_username_2", jSONObject.getString("username_2"));
+                    }
                     str4 = StringUtils.replace(str4, "$p_username", jSONObject.getString("username"));
                     str4 = StringUtils.replace(str4, "$p_password", jSONObject.getString("password"));
 

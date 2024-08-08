@@ -368,6 +368,8 @@ public class MtaDropManager {
                     val = StringUtils.replace(val, "[rdns]", vmta.domain);
                     val = StringUtils.replace(val, "[domain]", Url.checkUrl(vmta.domain));
                     val = StringUtils.replace(val, "[custom_domain]", vmta.customDomain);
+                    val = StringUtils.replace(val, "[smtp_1]", vmta.smtp_1);
+                    val = StringUtils.replace(val, "[smtp_2]", vmta.smtp_2);
                     break;
             }
             if (email != null) {
@@ -474,6 +476,12 @@ public class MtaDropManager {
                     mailMerge.append("\" ");
                     mailMerge.append("custom_domain=\"");
                     mailMerge.append(vmta.customDomain);
+                    mailMerge.append("\" ");
+                    mailMerge.append("smtp_1=\"");
+                    mailMerge.append(vmta.smtp_1);
+                    mailMerge.append("\" ");
+                    mailMerge.append("smtp_2=\"");
+                    mailMerge.append(vmta.smtp_2);
                     mailMerge.append("\" ");
                     break;
             }

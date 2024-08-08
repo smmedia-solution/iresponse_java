@@ -63,6 +63,12 @@ public class ServerVmta extends ActiveRecord implements Serializable {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     public Date lastUpdatedDate;
 
+    @Column(name = "smtp_1", type = "text", nullable = true, length = 255)
+    public String smtp_1;
+
+    @Column(name = "smtp_2", type = "text", nullable = true, length = 255)
+    public String smtp_2;
+
     public ServerVmta() throws Exception{
         setDatabase("system");
         setSchema("admin");
@@ -142,7 +148,15 @@ public class ServerVmta extends ActiveRecord implements Serializable {
             return false;
         Date date3 = getLastUpdatedDate();
         Date date4 = extends1.getLastUpdatedDate();
-        return !((date3 == null) ? (date4 != null) : !date3.equals(date4));
+        if ((date3 == null) ? (date4 != null) : !date3.equals(date4))
+            return false;
+        String str23 = getSmtp_1();
+        String str24 = extends1.getSmtp_1();
+        if ((str23 == null) ? (str24 != null) : !str23.equals(str24))
+            return false;
+        String str25 = getSmtp_2();
+        String str26 = extends1.getSmtp_2();
+        return !((str25 == null) ? (str26 != null) : !str25.equals(str26));
     }
 
     protected boolean exists(Object paramObject) {
@@ -311,8 +325,16 @@ public class ServerVmta extends ActiveRecord implements Serializable {
         this.lastUpdatedDate = lastUpdatedDate;
     }
 
+    public String getSmtp_1() { return smtp_1; }
+
+    public void setSmtp_1(String smtp_1) { this.smtp_1 = smtp_1; }
+
+    public String getSmtp_2() { return smtp_2; }
+
+    public void setSmtp_2(String smtp_2) { this.smtp_2 = smtp_2; }
+
     @Override
     public String toString() {
-        return "ServerVmta(id=" + getId() + ", mtaServerId=" + getMtaServerId() + ", mtaServerName=" + getMtaServerName() + ", ispId=" + getIspId() + ", ispName=" + getIspName() + ", status=" + getStatus() + ", type=" + getType() + ", name=" + getName() + ", domain=" + getDomain() + ", customDomain=" + getCustomDomain() + ", ip=" + getIp() + ", pingStatus=" + getPingStatus() + ", createdBy=" + getCreatedBy() + ", lastUpdatedBy=" + getLastUpdatedBy() + ", createdDate=" + getCreatedDate() + ", lastUpdatedDate=" + getLastUpdatedDate() + ")";
+        return "ServerVmta(id=" + getId() + ", mtaServerId=" + getMtaServerId() + ", mtaServerName=" + getMtaServerName() + ", ispId=" + getIspId() + ", ispName=" + getIspName() + ", status=" + getStatus() + ", type=" + getType() + ", name=" + getName() + ", domain=" + getDomain() + ", customDomain=" + getCustomDomain() + ", ip=" + getIp() + ", pingStatus=" + getPingStatus() + ", createdBy=" + getCreatedBy() + ", lastUpdatedBy=" + getLastUpdatedBy() + ", createdDate=" + getCreatedDate() + ", lastUpdatedDate=" + getLastUpdatedDate() + ", smtp_1=" + getSmtp_1() + ", smtp_2=" + getSmtp_2() + ")";
         }
     }

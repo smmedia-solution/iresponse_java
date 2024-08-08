@@ -393,14 +393,13 @@ public class Pmta implements Controller {
             throw new DatabaseException("No smtp list to this process !");
         }
 
-        String encryption = String.valueOf(app.getParameters().get("encryption"));
         String vmtaTemplate = FileUtils.readFileToString(new File(System.getProperty("assets.path") + "/pmta/configs/default/smtp-vmta.tpl"), "UTF-8");
 
         int threadCount = (serversIds.length() > 100) ? 100 : serversIds.length();
         ExecutorService execService = Executors.newFixedThreadPool(threadCount);
 
         for (int b = 0; b < serversIds.length(); b++){
-            execService.submit((Runnable)new SMTPVmtaCreator(serversIds.getInt(b), smtpsList, vmtaTemplate, encryption));
+            execService.submit((Runnable)new SMTPVmtaCreator(serversIds.getInt(b), smtpsList, vmtaTemplate, "tls"));
         }
         execService.shutdown();
         if (!execService.awaitTermination(1L, TimeUnit.DAYS)){
@@ -487,7 +486,7 @@ public class Pmta implements Controller {
         Pmta.PMTA_LOGS.add(logs);
     }
 
-    public Response controller(String action) {
+    public Response controller(String action) throws Exception {
         try {
             switch (Crypto.Base64Encode(action)){
                 case "Z2V0Q29uZmln":  //getConfig
@@ -515,8 +514,9 @@ public class Pmta implements Controller {
 
             }
         }catch (Exception ex){
-            new DatabaseException("Action not found !");
+            throw new DatabaseException("Action not found !" + ex.getMessage());
         }
+
         return null;
     }
 }
