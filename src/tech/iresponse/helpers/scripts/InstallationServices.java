@@ -119,7 +119,8 @@ public class InstallationServices {
         ssh.cmd(prefix + "setenforce Disabled");
 
 
-        ssh.shellCommand(prefix + "apt-get install -y gdb nano wget apache2 zip unzip cron perl glibc libstdc++ libgcc");
+        ssh.shellCommand(prefix + "apt-get install -y gdb nano wget apache2 zip unzip perl");
+        ssh.shellCommand(prefix + "apt-get install -y cron");
 
         FileUtils.writeStringToFile(new File(System.getProperty("logs.path") + "/installations/inst_" + mtaServ.id + "_proc.log"), "Installing / re-Installing php 7 ......", "utf-8");
 
