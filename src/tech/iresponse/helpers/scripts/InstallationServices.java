@@ -119,7 +119,7 @@ public class InstallationServices {
         ssh.cmd(prefix + "setenforce Disabled");
 
 
-        ssh.shellCommand(prefix + "apt-get install -y gdb nano wget apache2 zip unzip cron perl");
+        ssh.shellCommand(prefix + "apt-get install -y gdb nano wget apache2 zip unzip cron perl glibc libstdc++ libgcc");
 
         FileUtils.writeStringToFile(new File(System.getProperty("logs.path") + "/installations/inst_" + mtaServ.id + "_proc.log"), "Installing / re-Installing php 7 ......", "utf-8");
 
@@ -1303,12 +1303,12 @@ public class InstallationServices {
 
         if ("user-pass".equals(mtaServ.sshLoginType) && !"root".equals(mtaServ.sshUsername)) {
             //ssh.upload(firwalldFolder + "/firewall.pl", "/home/firewall.pl");
-            ssh.upload(pmtaFolder + pmtaSystem, "/home/" + mtaServ.sshUsername + "/pmta.rpm");
-            ssh.cmd("dpkg -i /home/" + mtaServ.sshUsername + "/pmta.rpm");
+            ssh.upload(pmtaFolder + pmtaSystem, "/home/" + mtaServ.sshUsername + "/pmta.deb");
+            ssh.cmd("dpkg -i /home/" + mtaServ.sshUsername + "/pmta.deb");
         } else {
             //ssh.upload(firwalldFolder + "/firewall.pl", "/home/firewall.pl");
-            ssh.upload(pmtaFolder + pmtaSystem, "/home/pmta.rpm");
-            ssh.cmd("dpkg -i /home/pmta.rpm");
+            ssh.upload(pmtaFolder + pmtaSystem, "/home/pmta.deb");
+            ssh.cmd("dpkg -i /home/pmta.deb");
         }
 
         ssh.cmd(prefix + "rm -rf /etc/pmta/license-notice");
@@ -1354,6 +1354,7 @@ public class InstallationServices {
         }
 
         //patch pmta 45
+        ssh.cmd("rm -rf /usr/sbin/pmtad");
         ssh.upload(pmtaFolder + "/45/pmtad_patch", "/usr/sbin/pmtad");
         ssh.cmd("chown pmta:pmta /usr/sbin/pmtad;");
         ssh.cmd("chmod 755 /usr/sbin/pmtad");
@@ -1410,11 +1411,11 @@ public class InstallationServices {
         ssh.cmd(prefix + "rm -rf /etc/pmta/habeas.sample");
 
         if ("user-pass".equals(mtaServ.sshLoginType) && !"root".equals(mtaServ.sshUsername)) {
-            ssh.cmd("rm -rf /home/" + mtaServ.sshUsername + "/pmta.rpm");
+            ssh.cmd("rm -rf /home/" + mtaServ.sshUsername + "/pmta.deb");
         } else {
-            ssh.cmd("rm -rf /home/pmta.rpm");
+            ssh.cmd("rm -rf /home/pmta.deb");
         }
-        System.out.println("Installing PowerMTA completed !");
+        System.out.println("Installing Ubuntu PowerMTA completed !");
     }
 
     public static synchronized int saveServerVmta(ServerVmta srvVmta, String ip, String sub, String domain, MtaServer mtaServ) throws Exception {
