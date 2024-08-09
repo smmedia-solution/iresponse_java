@@ -20,12 +20,9 @@ public class ServerChecker extends Thread {
         try {
             ssh = Authentification.connectToServer(this.mtaServer);
             if (ssh != null && ssh.isConnected()) {
-                int version = String.valueOf(ssh.cmd("cat /etc/*release* | grep 'centos:7'")).replaceAll("\n", "").contains("centos:7") ? 7 : 6;
-                boolean contain32 = String.valueOf(ssh.cmd("file /sbin/init")).contains("32-bit");
-                String systemVersion = (contain32 == true) ? "32bits" : "64bits";
-                this.mtaServer.os = "CentOS " + version + " " + systemVersion;
+                this.mtaServer.os = String.valueOf(ssh.cmd("awk -F= '/^PRETTY_NAME=/{print $2}' /etc/os-release")).replaceAll("\n", "");
 
-                String response = Agents.get("https://freegeoip.live/json/" + this.mtaServer.mainIp, null, 20);
+                String response = Agents.get("https://get.geojs.io/v1/ip/geo/" + this.mtaServer.mainIp + ".json", null, 20);
                 if (response != null && response.contains("country_code")) {
                     JSONObject countryCode = new JSONObject(response);
                     this.mtaServer.countryCode = countryCode.has("country_code") ? countryCode.getString("country_code") : "US";

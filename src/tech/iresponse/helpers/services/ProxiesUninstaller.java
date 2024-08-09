@@ -27,8 +27,15 @@ public class ProxiesUninstaller extends Thread {
 
             if (ssh != null && ssh.isConnected()) {
                 String prefix = "root".equals(ssh.getUsername()) ? "" : "sudo ";
-                ssh.cmd(prefix + " service 3proxy stop");
-                ssh.cmd(prefix + " yum remove -y 3proxy");
+                String release = String.valueOf(ssh.cmd("awk -F= '/^PRETTY_NAME=/{print $2}' /etc/os-release")).replaceAll("\n", "");
+                boolean isUbuntu = release.toLowerCase().contains("ubuntu");
+
+                ssh.cmd(prefix + " systemctl stop 3proxy");
+                if (isUbuntu) {
+                    ssh.cmd(prefix + " apt-get remove -y 3proxy");
+                } else {
+                    ssh.cmd(prefix + " yum remove -y 3proxy");
+                }
                 ssh.cmd(prefix + " rm -rf /etc/3proxy.cfg");
                 ssh.cmd(prefix + " rm -rf /var/log/3proxy*");
             }

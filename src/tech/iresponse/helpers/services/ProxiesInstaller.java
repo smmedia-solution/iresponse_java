@@ -42,26 +42,25 @@ public class ProxiesInstaller extends Thread {
             if (ssh != null && ssh.isConnected()) {
                 int ipsCount = 0;
                 String prefix = "root".equals(mtaServ.sshUsername) ? "" : "sudo ";
-                boolean centosRel7 = String.valueOf(ssh.cmd("cat /etc/centos-release")).toLowerCase().contains("centos linux release 7");
+                String release = String.valueOf(ssh.cmd("awk -F= '/^PRETTY_NAME=/{print $2}' /etc/os-release")).replaceAll("\n", "");
+                boolean isUbuntu = release.toLowerCase().contains("ubuntu");
+
                 String[] ips = new String[0];
 
-                if (centosRel7) {
-                    ips = ssh.cmd(prefix + " ip addr show | grep 'inet ' | grep -v '127.0.0.1' | cut -f2 | awk '{ print $2}' | cut -f 1 -d '/'").split(Pattern.quote("\n"));
-                } else {
-                    ips = ssh.cmd(prefix + " ifconfig  | grep 'inet ad'| grep -v '127.0.0.1' | cut -d: -f2 | awk '{ print $1}'").split(Pattern.quote("\n"));
-                }
+                ips = ssh.cmd(prefix + " ip addr show | grep 'inet ' | grep -v '127.0.0.1' | cut -f2 | awk '{ print $2}' | cut -f 1 -d '/'").split(Pattern.quote("\n"));
 
                 if (ips.length > 0) {
                     ssh.cmd(prefix + " service 3proxy stop");
                     ssh.cmd(prefix + " yum remove -y 3proxy");
                     ssh.cmd(prefix + " rm -rf /etc/3proxy.cfg");
                     ssh.cmd(prefix + " rm -rf /var/log/3proxy*");
-                    if (centosRel7) {
-                        ssh.cmd(prefix + " rpm -ivh http://download-ib01.fedoraproject.org/pub/epel/6/x86_64/Packages/3/3proxy-0.6.1-10.el6.x86_64.rpm");
+                    if (isUbuntu) {
+                        ssh.cmd(prefix + " wget https://github.com/z3APA3A/3proxy/releases/download/0.9.3/3proxy-0.9.3.x86_64.deb;");
+                        ssh.cmd(prefix + " dpkg -i 3proxy-0.9.3.x86_64.deb");
                     } else {
-                        ssh.cmd(prefix + " rpm -ivh http://download-ib01.fedoraproject.org/pub/epel/7/x86_64/Packages/3/3proxy-sysvinit-0.7-1.el7.x86_64.rpm");
+                        ssh.cmd(prefix + " rpm -ivh http://download-ib01.fedoraproject.org/pub/epel/6/x86_64/Packages/3/3proxy-0.6.1-10.el6.x86_64.rpm");
+                        ssh.cmd(prefix + " yum install -y 3proxy");
                     }
-                    ssh.cmd(prefix + " yum install -y 3proxy");
                     String proxyPath = FileUtils.readFileToString(new File(System.getProperty("assets.path") + "/templates/servers/3proxy.tpl"), "utf-8");
                     String socks_proxy = "";
                     String http_proxy = "";
@@ -82,8 +81,8 @@ public class ProxiesInstaller extends Thread {
                     }
 
                     ssh.uploadContent(proxyPath, "/etc/3proxy.cfg");
-                    ssh.cmd("service 3proxy start");
-                    ssh.cmd("chkconfig 3proxy on");
+                    ssh.cmd(prefix + " systemctl enable 3proxy");
+                    ssh.cmd(prefix + " systemctl start 3proxy");
 
                     if (newProxie) {
                         proxyServ.mtaServerId = mtaServ.id;

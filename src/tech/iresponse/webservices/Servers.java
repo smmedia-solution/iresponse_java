@@ -192,16 +192,18 @@ public class Servers implements Controller {
             }
 
             String prefix = "root".equals(mtaServ.sshUsername) ? "" : "sudo ";
-            ssh.cmd("yum install -y net-tools");
-            boolean systemInf32 = String.valueOf(ssh.cmd("file /sbin/init")).contains("32-bit");
-            if (systemInf32 == true) {
-                serverInfo.put("bits", "32bits");
-            } else {
-                serverInfo.put("bits", "64bits");
+            serverInfo.put("bits", "64bits");
+
+            String release = String.valueOf(ssh.cmd("awk -F= '/^PRETTY_NAME=/{print $2}' /etc/os-release")).replaceAll("\n", "");
+            release = release.toLowerCase();
+            if (release.contains("centos linux 7")) {
+                serverInfo.put("version", "centos 7");
+            } else if (release.contains("ubuntu")) {
+                serverInfo.put("version", "ubuntu");
+            } else  {
+                serverInfo.put("version", "unknown");
             }
 
-            int version = String.valueOf(ssh.cmd("cat /etc/*release* | grep 'centos:7'")).replaceAll("\n", "").contains("centos:7") ? 7 : 6;
-            serverInfo.put("version", String.valueOf(version));
             serverInfo.put("ips-v4", ssh.cmd(prefix + "ip addr show | grep 'inet ' | grep -v '127.0.0.1' | cut -f2 | awk '{ print $2}' | cut -f 1 -d '/'"));
             String[] ipV6 = ssh.cmd(prefix + "ip addr show | grep 'inet6' | grep -i 'global' | cut -f2 | awk '{ print $2}' | cut -f 1 -d '/' | awk '{ print $1}'").split("\n");
 
@@ -345,11 +347,16 @@ public class Servers implements Controller {
                     int pmtaVersion = (parameters.has("pmta-version") && "45".equalsIgnoreCase(parameters.getString("pmta-version").trim())) ? 45 : 40;
 
                     String prefix = "root".equals(mtaserver.sshUsername) ? "" : "sudo ";
-                    int version = String.valueOf(ssh.cmd("cat /etc/*release* | grep 'centos:7'")).replaceAll("\n", "").contains("centos:7") ? 7 : 6;
+                    String release = String.valueOf(ssh.cmd("awk -F= '/^PRETTY_NAME=/{print $2}' /etc/os-release")).replaceAll("\n", "");
+                    boolean isUbuntu = release.toLowerCase().contains("ubuntu");
 
                     if (installServices) {
                         FileUtils.writeStringToFile(new File(System.getProperty("logs.path") + "/installations/inst_" + serverId + "_proc.log"), "Installing / re-installing Fondamentals ......", "utf-8");
-                        InstallationServices.installServices(ssh, mtaserver, prefix, version, true);
+                        if (isUbuntu) {
+                            InstallationServices.installServicesUbuntu(ssh, mtaserver, prefix, true);
+                        } else {
+                            InstallationServices.installServices(ssh, mtaserver, prefix, 7, true);
+                        }
                     }
 
                     if (updatePort) {
@@ -364,11 +371,7 @@ public class Servers implements Controller {
                     String str2 = StringUtils.replace(FileUtils.readFileToString(new File(System.getProperty("assets.path") + "/templates/servers/sshd_config.tpl"), "utf-8"), "$p_port", String.valueOf(mtaserver.sshPort));
                     if (!"".equals(str2)) {
                         ssh.uploadContent(str2, "/etc/ssh/sshd_config");
-                        if (version == 7) {
-                            ssh.shellCommand(prefix + "systemctl restart sshd");
-                        } else {
-                            ssh.shellCommand(prefix + "service sshd restart");
-                        }
+                        ssh.shellCommand(prefix + "systemctl restart sshd");
                     }
 
                     if (updatePassword && "user-pass".equalsIgnoreCase(mtaserver.sshLoginType)) {
@@ -382,10 +385,16 @@ public class Servers implements Controller {
 
                     if (updateFirewall) {
                         String str = Authentification.getInfo(Crypto.Base64Decode("VU53aDhnMU1ZdEI0SWhuOXFlQVgvVFRaaGJVR2lOUUM4UjRWU0RLTFBhTVlmYnZnQUJONEQ5cmszR2hpUk1xRw=="), null);
-                        if (version == 7) {
+                        if(isUbuntu) {
+                            ssh.cmd(prefix + "ufw disable");
+                            ssh.cmd(prefix + "systemctl stop ufw");
+                            ssh.cmd(prefix + "systemctl disable ufw");
+                            ssh.shellCommand(prefix + "apt-get install -y iptables");
+                        } else {
                             ssh.cmd(prefix + "systemctl stop firewalld && " + prefix + "systemctl disable firewalld");
                             ssh.shellCommand(prefix + "yum install -y iptables-services");
                         }
+
                         ssh.cmd("iptables -F");
                         ssh.cmd("iptables -A INPUT -p tcp -s " + str + " --dport " + mtaserver.sshPort + " -j ACCEPT");
                         String[] firewallIpsDomain = String.valueOf(Application.getSettingsParam("pmta_firewall_ips_domains")).split("\n");
@@ -407,17 +416,26 @@ public class Servers implements Controller {
                         ssh.cmd("iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT");
                         ssh.cmd("iptables-save");
                         ssh.cmd("iptables -L -v -n");
-                        ssh.cmd(prefix + "service iptables start && " + prefix + "chkconfig iptables on");
+                        ssh.cmd(prefix + "systemctl enable iptables");
+                        ssh.cmd(prefix + "systemctl start iptables");
+
                     } else {
-                        if (version == 7){
+                        if(isUbuntu) {
+                            ssh.cmd(prefix + "ufw disable");
+                            ssh.cmd(prefix + "systemctl stop ufw");
+                            ssh.cmd(prefix + "systemctl disable ufw");
+                        } else {
                             ssh.cmd(prefix + "systemctl stop firewalld && " + prefix + "systemctl disable firewalld");
                         }
-                        ssh.cmd(prefix + "service iptables stop && " + prefix + "chkconfig iptables off");
                     }
 
                     if (updateIps) {
                         FileUtils.writeStringToFile(new File(System.getProperty("logs.path") + "/installations/inst_" + serverId + "_proc.log"), "Updating ips ( database update & DNS records update ) ......", "utf-8");
-                        InstallationServices.installDkimDmarc(ssh, mtaserver, prefix, version, mapping, keepOldSubs, usePredefinedSubs, activateDmarc, activateDkim);
+                        if (isUbuntu) {
+                            InstallationServices.installDkimDmarcUbuntu(ssh, mtaserver, prefix, mapping, keepOldSubs, usePredefinedSubs, activateDmarc, activateDkim);
+                        } else {
+                            InstallationServices.installDkimDmarc(ssh, mtaserver, prefix, mapping, keepOldSubs, usePredefinedSubs, activateDmarc, activateDkim);
+                        }
                         mtaserver.setDkimInstalled(activateDkim);
                         mtaserver.setDmarcInstalled(activateDmarc);
                         mtaserver.update();
@@ -425,18 +443,26 @@ public class Servers implements Controller {
 
                     if (installTracking) {
                         FileUtils.writeStringToFile(new File(System.getProperty("logs.path") + "/installations/inst_" + serverId + "_proc.log"), "Installing / re-installing Tracking System ......", "utf-8");
-                        InstallationServices.installTracking(ssh, mtaserver, prefix, version, useBrands, useSsl);
+                        if (isUbuntu) {
+                            InstallationServices.installTrackingUbuntu(ssh, mtaserver, prefix, useBrands, useSsl);
+                        } else {
+                            InstallationServices.installTracking(ssh, mtaserver, prefix, useBrands, useSsl);
+                        }
                     }
 
                     if (installPmta) {
                         FileUtils.writeStringToFile(new File(System.getProperty("logs.path") + "/installations/inst_" + serverId + "_proc.log"), "Installing / re-installing PowerMTA ......", "utf-8");
-                        if(pmtaVersion == 40) {
-                            InstallationServices.installPmta(ssh, mtaserver, prefix);
+                        if (isUbuntu) {
+                            InstallationServices.installPmta45Ubuntu(ssh, mtaserver, prefix);
+                        } else {
+                            if (pmtaVersion == 40) {
+                                InstallationServices.installPmta(ssh, mtaserver, prefix);
+                            }
+                            if (pmtaVersion == 45) {
+                                InstallationServices.installPmta45(ssh, mtaserver, prefix);
+                            }
                         }
-                        if (pmtaVersion == 45) {
-                            InstallationServices.installPmta45(ssh, mtaserver, prefix);
-                        }
-                    }
+                     }
 
                     mtaserver.setInstalled(true);
                     mtaserver.update();

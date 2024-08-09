@@ -26,6 +26,8 @@ public class ServersCommands extends Thread {
             if (ssh != null && ssh.isConnected()) {
 
                 String prefix = "root".equals(mtaServ.sshUsername) ? "" : "sudo";
+                String release = String.valueOf(ssh.cmd("awk -F= '/^PRETTY_NAME=/{print $2}' /etc/os-release")).replaceAll("\n", "");
+                boolean isUbuntu = release.toLowerCase().contains("ubuntu");
 
                 switch (this.command) {
                     case "reboot-server":
@@ -40,10 +42,11 @@ public class ServersCommands extends Thread {
                         ssh.cmd("> /var/log/3proxy.log");
                         ssh.cmd("> /var/log/btmp");
                         ssh.cmd("> /var/log/secure");
-                        ssh.cmd("> /var/log/httpd/error_log");
-                        ssh.cmd("> /var/log/httpd/ssl_access_log");
-                        ssh.cmd("> /var/log/httpd/ssl_request_log");
-                        ssh.cmd("> /var/log/httpd/access_log");
+                        if (isUbuntu){
+                            ssh.cmd("> /var/log/apache2/*");
+                        } else {
+                            ssh.cmd("> /var/log/httpd/*");
+                        }
                         ssh.cmd("rm -rf /var/log/pmta.log.*");
                         ssh.cmd("> /var/log/pmta.log");
                         ssh.cmd("rm -rf /var/spool/iresponse/tmp/*");
@@ -51,25 +54,28 @@ public class ServersCommands extends Thread {
                         log = log + "All logs are cleared !\n";
                         break;
                     case "stop-apache":
-                        log = log + ssh.cmd(prefix + " service httpd stop");
+                        if (release.toLowerCase().contains("ubuntu")){
+                            log = log + ssh.cmd(prefix + " systemctl stop apache2");
+                        } else {
+                            log = log + ssh.cmd(prefix + " systemctl stop httpd");
+                        }
                         break;
                     case "start-apache":
-                        log = log + ssh.cmd(prefix + " service httpd start");
+                        if(isUbuntu){
+                            log = log + ssh.cmd(prefix + " systemctl start apache2");
+                        } else {
+                            log = log + ssh.cmd(prefix + " systemctl start httpd");
+                        }
                         break;
                     case "restart-apache":
-                        log = log + ssh.cmd(prefix + " service httpd restart");
+                        if (isUbuntu){
+                            log = log + ssh.cmd(prefix + " systemctl restart apache2");
+                        } else {
+                            log = log + ssh.cmd(prefix + " systemctl restart httpd");
+                        }
                         break;
                     case "get-info":
-                        boolean version = String.valueOf(ssh.cmd(prefix + " cat /etc/centos-release")).toLowerCase().contains("centos linux release 7");
-                        if (version) {
-                            log = log + "Linux Destibution : RedHat CentOS 7 ";
-                        } else {
-                            log = log + "Linux Destibution : RedHat CentOS 6 ";
-                        }
-
-                        boolean checkSystem32 = String.valueOf(ssh.cmd("file /sbin/init")).contains("32-bit");
-                        String systemVersion = (checkSystem32 == true) ? "32bits" : "64bits";
-                        log = log + systemVersion + " \n";
+                        log = log + "Linux Distribution : " + release + " ";
 
                         log = log + "RAM : " + ssh.cmd(prefix + " free -m | grep Mem: | cut -f2 | awk '{ print $2}'").replaceAll("\n", "").replaceAll("\r", "") + " Mb \n";
                         String[] storage = ssh.cmd(prefix + " df -h | grep '/dev/' | cut -f2").split(Pattern.quote("\n"))[0].replaceAll("( )+", " ").split(" ");
@@ -82,12 +88,7 @@ public class ServersCommands extends Thread {
                         }
                         break;
                     case "get-ips":
-                        Boolean releaseSys = String.valueOf(ssh.cmd("cat /etc/centos-release")).toLowerCase().contains("centos linux release 7");
-                        if (releaseSys) {
-                            log = log + ssh.cmd(prefix + " ip addr show | grep 'inet ' | grep -v '127.0.0.1' | cut -f2 | awk '{ print $2}' | cut -f 1 -d '/'");
-                            break;
-                        }
-                        log = log + ssh.cmd(prefix + " ifconfig  | grep 'inet ad'| grep -v '127.0.0.1' | cut -d: -f2 | awk '{ print $1}'");
+                        log = log + ssh.cmd(prefix + " ip addr show | grep 'inet ' | grep -v '127.0.0.1' | cut -f2 | awk '{ print $2}' | cut -f 1 -d '/'");
                         break;
                     default:
                         throw new DatabaseException("Unsupported action !");
