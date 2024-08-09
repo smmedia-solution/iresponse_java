@@ -101,12 +101,14 @@ public class InstallationServices {
     }
 
     public static void installServicesUbuntu(SSHConnector ssh, MtaServer mtaServ, String prefix, boolean updated) throws Exception {
+        ssh.shellCommand(prefix + "export DEBIAN_FRONTEND=noninteractive && dpkg --force-confold --configure -a && apt-get update -y");
+        ssh.shellCommand(prefix + "apt-get install -y software-properties-common");
+
         if (updated){
-            ssh.shellCommand(prefix + "apt-get update -y");
-            ssh.shellCommand(prefix + "apt-get install -y software-properties-common");
+            ssh.shellCommand(prefix + "apt-get upgrade -y");
         }
 
-        ssh.shellCommand(prefix + "apt-get remove -y apache2 libopendkim-dev opendkim postfix php*");
+        ssh.shellCommand(prefix + "apt-get remove -y apache2 opendkim postfix php*");
         ssh.cmd(prefix + "rm -rf /etc/apache2");
         ssh.cmd(prefix + "rm -rf /var/www/html/*");
         ssh.cmd(prefix + "rm -rf /etc/opendkim/");
@@ -117,14 +119,13 @@ public class InstallationServices {
         ssh.cmd(prefix + "setenforce Disabled");
 
 
-        ssh.shellCommand(prefix + "apt-get install -y sudo openssh-clients gdb nano wget apache2 libapache2-mod-php zip unzip cron perl python3 python3-pip python-pip");
-        ssh.shellCommand(prefix + "pip3 install requests");
+        ssh.shellCommand(prefix + "apt-get install -y gdb nano wget apache2 zip unzip cron perl");
 
         FileUtils.writeStringToFile(new File(System.getProperty("logs.path") + "/installations/inst_" + mtaServ.id + "_proc.log"), "Installing / re-Installing php 7 ......", "utf-8");
 
         ssh.cmd(prefix + "add-apt-repository ppa:ondrej/php -y");
-        ssh.shellCommand(prefix + "apt-get -y php7.1 php7.1-mcrypt php7.1-cli php7.1-gd php7.1-curl php7.1-pgsql php7.1-mysql php7.1-ldap php7.1-zip php7.1-fileinfo php7.1-common php7.1-pdo php7.1-mbstring php7.1-soap php7.1-zip php7.1-xmlrpc php7.1-opcache");
-
+        //install php 7.1
+        ssh.shellCommand(prefix + "apt-get install -y php7.1 php7.1-cli php7.1-gd php7.1-curl php7.1-common");
         ssh.cmd(prefix + "sed -i 's/upload_max_filesize = 2M/upload_max_filesize = 3G/g' /etc/php/7.1/apache2/php.ini");
         ssh.cmd(prefix + "sed -i 's/max_file_uploads = 20/max_file_uploads = 200/g' /etc/php/7.1/apache2/php.ini");
         ssh.cmd(prefix + "sed -i 's/post_max_size = 8M/post_max_size = 3G/g' /etc/php/7.1/apache2/php.ini");
@@ -976,19 +977,6 @@ public class InstallationServices {
         }
 
         for (ServerVmta srvVmta2 : listVmta) {
-            String str9 = Url.checkUrl(srvVmta2.domain);
-            Domain domain3 = (Domain)hashMap.get(str9);
-            domain3.value = domain3.value.replaceAll("\r", "").replaceAll("\n", "");
-            String str10 = StringUtils.replace(domain3.value, ".", "_");
-
-            if ("yes".equalsIgnoreCase(domain3.hasBrand)) {
-                String rdns = StringUtils.replace(vhosts, "$p_rdns", srvVmta2.domain);
-                rdns = StringUtils.replace(rdns, "$p_ip", srvVmta2.ip);
-                rdns = StringUtils.replace(rdns, "$p_path", "/var/www/brands/" + str10);
-                contents = contents + rdns + "\n\n";
-                continue;
-            }
-
             String rdns2 = StringUtils.replace(vhosts, "$p_rdns", srvVmta2.domain);
             rdns2 = StringUtils.replace(rdns2, "$p_ip", srvVmta2.ip);
             rdns2 = StringUtils.replace(rdns2, "$p_path", "/var/www/brands/default");
@@ -1301,7 +1289,7 @@ public class InstallationServices {
 
         ssh.cmd(prefix + "groupadd pmta");
         ssh.cmd(prefix + "useradd -g pmta pmta");
-        ssh.shellCommand(prefix + "service pmta stop && " + prefix + "service pmtahttp stop");
+        ssh.shellCommand(prefix + "systemctl stop pmta && " + prefix + "systemctl stop pmtahttp");
         ssh.cmd(prefix + "dpkg -r PowerMTA");
         ssh.cmd(prefix + "rm -rf /etc/pmta");
         ssh.cmd(prefix + "rm -rf /var/lib/pmta");

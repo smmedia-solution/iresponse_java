@@ -20,7 +20,8 @@ public class ServerChecker extends Thread {
         try {
             ssh = Authentification.connectToServer(this.mtaServer);
             if (ssh != null && ssh.isConnected()) {
-                this.mtaServer.os = String.valueOf(ssh.cmd("awk -F= '/^PRETTY_NAME=/{print $2}' /etc/os-release")).replaceAll("\n", "");
+                String release = String.valueOf(ssh.cmd("awk -F= '/^PRETTY_NAME=/{print $2}' /etc/os-release")).replaceAll("\n", "");
+                this.mtaServer.os = release.replaceAll("\"", "");
 
                 String response = Agents.get("https://get.geojs.io/v1/ip/geo/" + this.mtaServer.mainIp + ".json", null, 20);
                 if (response != null && response.contains("country_code")) {

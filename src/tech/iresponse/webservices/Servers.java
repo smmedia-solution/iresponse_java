@@ -195,14 +195,9 @@ public class Servers implements Controller {
             serverInfo.put("bits", "64bits");
 
             String release = String.valueOf(ssh.cmd("awk -F= '/^PRETTY_NAME=/{print $2}' /etc/os-release")).replaceAll("\n", "");
-            release = release.toLowerCase();
-            if (release.contains("centos linux 7")) {
-                serverInfo.put("version", "centos 7");
-            } else if (release.contains("ubuntu")) {
-                serverInfo.put("version", "ubuntu");
-            } else  {
-                serverInfo.put("version", "unknown");
-            }
+            release = release.toLowerCase().replaceAll("\"", "");
+
+            serverInfo.put("version", release);
 
             serverInfo.put("ips-v4", ssh.cmd(prefix + "ip addr show | grep 'inet ' | grep -v '127.0.0.1' | cut -f2 | awk '{ print $2}' | cut -f 1 -d '/'"));
             String[] ipV6 = ssh.cmd(prefix + "ip addr show | grep 'inet6' | grep -i 'global' | cut -f2 | awk '{ print $2}' | cut -f 1 -d '/' | awk '{ print $1}'").split("\n");
@@ -353,34 +348,10 @@ public class Servers implements Controller {
                     if (installServices) {
                         FileUtils.writeStringToFile(new File(System.getProperty("logs.path") + "/installations/inst_" + serverId + "_proc.log"), "Installing / re-installing Fondamentals ......", "utf-8");
                         if (isUbuntu) {
-                            InstallationServices.installServicesUbuntu(ssh, mtaserver, prefix, true);
+                            InstallationServices.installServicesUbuntu(ssh, mtaserver, prefix, false);
                         } else {
-                            InstallationServices.installServices(ssh, mtaserver, prefix, 7, true);
+                            InstallationServices.installServices(ssh, mtaserver, prefix, 7, false);
                         }
-                    }
-
-                    if (updatePort) {
-                        FileUtils.writeStringToFile(new File(System.getProperty("logs.path") + "/installations/inst_" + serverId + "_proc.log"), "Updating ssh port ......", "utf-8");
-                        int min = 20000 , max = 52000;
-                        int port = new Random().nextInt(max - min) + min;
-                        mtaserver.oldSshPort = mtaserver.sshPort;
-                        mtaserver.sshPort = port;
-                        mtaserver.update();
-                    }
-
-                    String str2 = StringUtils.replace(FileUtils.readFileToString(new File(System.getProperty("assets.path") + "/templates/servers/sshd_config.tpl"), "utf-8"), "$p_port", String.valueOf(mtaserver.sshPort));
-                    if (!"".equals(str2)) {
-                        ssh.uploadContent(str2, "/etc/ssh/sshd_config");
-                        ssh.shellCommand(prefix + "systemctl restart sshd");
-                    }
-
-                    if (updatePassword && "user-pass".equalsIgnoreCase(mtaserver.sshLoginType)) {
-                        FileUtils.writeStringToFile(new File(System.getProperty("logs.path") + "/installations/inst_" + serverId + "_proc.log"), "Updating ssh password ......", "utf-8");
-                        String password = Strings.getSaltString(32, true, true, true, false);
-                        ssh.shellCommand(prefix + "echo \"" + password + "\" | passwd --stdin " + mtaserver.sshUsername);
-                        mtaserver.oldSshPassword = mtaserver.sshPassword;
-                        mtaserver.sshPassword = password;
-                        mtaserver.update();
                     }
 
                     if (updateFirewall) {
